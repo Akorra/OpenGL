@@ -139,16 +139,14 @@ int main(void)
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (const void*) 0);
 
     ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
-    std::cout << "VERTEX" << std::endl;
-    std::cout << source.VertexSource << std::endl;
-    std::cout << "FRAGMENT" << std::endl;
-    std::cout << source.FragmentSource << std::endl;
 
     //location in shader must match with attribute index
 
     unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
 
     glUseProgram(shader);
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
                               
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
