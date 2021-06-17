@@ -1,7 +1,46 @@
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+
+struct ShaderProgramSource
+{
+    std::string VertexSource;
+    std::string FragmentSource;
+};
+
+static ShaderProgramSource ParseShader(const std::string& filepath)
+{
+    std::ifstream stream(filepath);
+
+    enum class ShaderType
+    {
+        NONE = -1, VERTEX = 0, FRAGMENT = 1
+    };
+
+    std::string line;
+    std::stringstream ss[2]; //one for vertex other for fragment
+    ShaderType type = ShaderType::NONE;
+    while (getline(stream, line))
+    {
+        if (line.find("#shader") != std::string::npos)
+        {
+            if (line.find("vertex") != std::string::npos)
+                type = ShaderType::VERTEX;
+            else if (line.find("fragment") != std::string::npos)
+                type = ShaderType::FRAGMENT;
+        }
+        else
+        {
+            ss[(int)type] << line.c_str() << '\n';
+        }
+    }
+
+    return { ss[0].str(), ss[1].str() };
+}
 
 // compile shader function to avoid code duplication
 // type is a GLEnum but well use its equivalent to avoid openGl built in types
@@ -99,28 +138,15 @@ int main(void)
     // first attribute index 0, num elements in vertex, type of vertex data, already normalized (no need for it),  stride (only pos so 8 bytes), only one attribute so pointer offset is 0
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (const void*) 0);
 
-    //location must match with attribute index
-    std::string vertexShader =
-        "#version 330 core\n"
-        "\n"
-        "layout(location=0) in vec4 position;\n" 
-        "\n"
-        "void main()\n"
-        "{\n"
-        "   gl_Position = position;\n"
-        "}\n";
+    ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
+    std::cout << "VERTEX" << std::endl;
+    std::cout << source.VertexSource << std::endl;
+    std::cout << "FRAGMENT" << std::endl;
+    std::cout << source.FragmentSource << std::endl;
 
-    std::string fragmentShader =
-        "#version 330 core\n"
-        "\n"
-        "layout(location=0) out vec4 color;\n"
-        "\n"
-        "void main()\n"
-        "{\n"
-        "   color = vec4(1.0, 1.0, 0.0, 1.0);\n"
-        "}\n";
+    //location in shader must match with attribute index
 
-    unsigned int shader = CreateShader(vertexShader, fragmentShader);
+    unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
 
     glUseProgram(shader);
                               
