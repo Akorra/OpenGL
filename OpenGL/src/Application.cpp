@@ -120,17 +120,21 @@ int main(void)
     std::cout << glGetString(GL_VERSION) << std::endl;
 
     //Triangle x1, y1, x2, y2, x3, y3
-    float positions[6] = {
+    float positions[] = {
         -0.5f, -0.5f,
-         0.0f,  0.5f,
-         0.5f, -0.5f 
+         0.5f, -0.5f,
+         0.5f,  0.5f,
+
+         0.5f,  0.5f,
+        -0.5f,  0.5f,
+        -0.5f, -0.5f
     };
 
     // vertex buffer
     unsigned int buffer;
     glGenBuffers(1, &buffer); //end argument saves id of buffer
     glBindBuffer(GL_ARRAY_BUFFER, buffer); //select buffer for work, since it is a vertex buffer its just an array
-    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW); // STATIC since the data will be modified once and used every frame
+    glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions, GL_STATIC_DRAW); // STATIC since the data will be modified once and used every frame
 
     //enable first vertex attrib array
     glEnableVertexAttribArray(0);
@@ -146,7 +150,7 @@ int main(void)
 
     glUseProgram(shader);
 
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glClearColor(0.13f, 0.13f, 0.13f, 1.0f);
                               
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -155,7 +159,7 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         //draw currently bound buffer
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
