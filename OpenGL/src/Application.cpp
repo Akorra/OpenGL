@@ -6,11 +6,29 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#define ASSERT(x) if (!(x)) __debugbreak();
+
 struct ShaderProgramSource
 {
     std::string VertexSource;
     std::string FragmentSource;
 };
+
+static void GLClearError()
+{
+    while (glGetError() != GL_NO_ERROR); // GL_NO_ERROR is 0 so we could just check result instead of comparing
+}
+
+static bool GLLogCall()
+{
+    while (GLenum err = glGetError())
+    {
+        std::cout << "[OpenGL_Error] (" << err << ")" << std::endl;
+        return false;
+        
+    }
+    return true;
+}
 
 static ShaderProgramSource ParseShader(const std::string& filepath)
 {
@@ -35,7 +53,7 @@ static ShaderProgramSource ParseShader(const std::string& filepath)
         }
         else
         {
-            ss[(int)type] << line.c_str() << '\n';
+            ss[(int)type] << line << '\n';
         }
     }
 
@@ -121,26 +139,34 @@ int main(void)
 
     //Triangle x1, y1, x2, y2, x3, y3
     float positions[] = {
-        -0.5f, -0.5f,
-         0.5f, -0.5f,
-         0.5f,  0.5f,
+        -0.5f, -0.5f, //0
+         0.5f, -0.5f, //1
+         0.5f,  0.5f, //2
+        -0.5f,  0.5f  //3
+    };
 
-         0.5f,  0.5f,
-        -0.5f,  0.5f,
-        -0.5f, -0.5f
+    unsigned int indices[] = {
+        0, 1, 2, //triangle 1
+        2, 3, 0  //triangle 2
     };
 
     // vertex buffer
     unsigned int buffer;
     glGenBuffers(1, &buffer); //end argument saves id of buffer
     glBindBuffer(GL_ARRAY_BUFFER, buffer); //select buffer for work, since it is a vertex buffer its just an array
-    glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions, GL_STATIC_DRAW); // STATIC since the data will be modified once and used every frame
+    glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions, GL_STATIC_DRAW); // STATIC since the data will be modified once and used every frame, 6*2 floats (6 vertices with x and y each)
 
     //enable first vertex attrib array
     glEnableVertexAttribArray(0);
 
     // first attribute index 0, num elements in vertex, type of vertex data, already normalized (no need for it),  stride (only pos so 8 bytes), only one attribute so pointer offset is 0
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (const void*) 0);
+
+    // index buffer
+    unsigned int ibo;
+    glGenBuffers(1, &ibo); //end argument saves id of ibo
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); //select buffer for work, since it is a vertex buffer its just an array
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 6 * sizeof(unsigned int), indices, GL_STATIC_DRAW); // STATIC since the data will be modified once and used every frame, 6 indices
 
     ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
 
@@ -158,8 +184,12 @@ int main(void)
         /* Render here */
         glClear(GL_COLOR_BUFFER_BIT);
 
-        //draw currently bound buffer
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        GLClearError();
+
+        //draw currently bound buffer, 6 indices
+        glDrawElements(GL_TRIANGLES, 6, GL_INT, nullptr);
+
+        ASSERT(GLLogCall());
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
