@@ -134,6 +134,8 @@ int main(void)
     /* Make the window's context current */
     glfwMakeContextCurrent(window);
 
+    glfwSwapInterval(1);
+
     /* glew needs a valid ogl rendering context */
     if (glewInit() != GLEW_OK)
         std::cout << "Error!" << std::endl;
@@ -179,16 +181,31 @@ int main(void)
 
     GLCall(glUseProgram(shader));
 
+    GLCall(int location = glGetUniformLocation(shader, "u_Color")); //get uniform location
+    ASSERT(location != -1);
+
+    float r = 0.0f;
+    float increment = 0.05f;
+
     GLCall(glClearColor(0.13f, 0.13f, 0.13f, 1.0f));
                               
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     { 
+        GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
+
         /* Render here */
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
 
         //draw currently bound buffer, 6 indices
         GLCall(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+
+        if (r > 1.0f)
+            increment = -0.05f;
+        else if (r < 0.0f)
+            increment = 0.05f;
+
+        r += increment;
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
