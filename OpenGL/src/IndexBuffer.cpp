@@ -2,11 +2,14 @@
 
 #include "Renderer.h"
 
-IndexBuffer::IndexBuffer(const void* data, unsigned int size)
+IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count) : m_Count(count)
 {
-    GLCall(glGenBuffers(1, &m_RendererID)); //end argument saves id of buffer
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, m_RendererID)); //select buffer for work, since it is a Index buffer its just an array
-    GLCall(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW)); // STATIC since the data will be modified once and used every frame, 6*2 floats (6 vertices with x and y each)
+    ASSERT(sizeof(unsigned int) == sizeof(GLuint));
+
+    GLCall(glGenBuffers(1, &m_RendererID)); //end argument saves id of ibo
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID)); //select buffer for work, since it is a vertex buffer its just an array
+    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, count*sizeof(unsigned int), data, GL_STATIC_DRAW)); // STATIC since the data will be modified once and used every frame, 6 indices
+
 }
 
 IndexBuffer::~IndexBuffer()
@@ -14,12 +17,12 @@ IndexBuffer::~IndexBuffer()
     GLCall(glDeleteBuffers(1, &m_RendererID));
 }
 
-void IndexBuffer::Bind()
+void IndexBuffer::Bind() const
 {
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, m_RendererID));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID));
 }
 
-void IndexBuffer::Unbind()
+void IndexBuffer::Unbind() const
 {
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 }
