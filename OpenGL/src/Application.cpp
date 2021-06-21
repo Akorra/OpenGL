@@ -144,10 +144,6 @@ int main(void)
             2, 3, 0  //triangle 2
         };
 
-        unsigned int vao;
-        GLCall(glGenVertexArrays(1, &vao));
-        GLCall(glBindVertexArray(vao));
-
         VertexBuffer vb(positions, 4 * 2 * sizeof(float));
 
         VertexBufferLayout layout;
@@ -170,7 +166,7 @@ int main(void)
         ASSERT(location != -1);
 
         //Unbind everything
-        GLCall(glBindVertexArray(0));
+        va.Unbind();
         GLCall(glUseProgram(0));
         GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
         GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
