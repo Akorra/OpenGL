@@ -6,32 +6,13 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#define ASSERT(x) if (!(x)) __debugbreak();
-#define GLCall(x) GLClearError();\
-    x;\
-    ASSERT(GLLogCall(#x, __FILE__, __LINE__))
+#include "Renderer.h"
 
 struct ShaderProgramSource
 {
     std::string VertexSource;
     std::string FragmentSource;
 };
-
-static void GLClearError()
-{
-    while (glGetError() != GL_NO_ERROR); // GL_NO_ERROR is 0 so we could just check result instead of comparing
-}
-
-static bool GLLogCall(const char* function, const char* file, int line)
-{
-    while (GLenum err = glGetError())
-    {
-        std::cout << "[OpenGL_Error] (" << err << "): " << function << " " << file << ": " << line << std::endl;
-        return false;
-        
-    }
-    return true;
-}
 
 static ShaderProgramSource ParseShader(const std::string& filepath)
 {
@@ -59,7 +40,7 @@ static ShaderProgramSource ParseShader(const std::string& filepath)
             ss[(int)type] << line << '\n';
         }
     }
-
+     
     return { ss[0].str(), ss[1].str() };
 }
 
@@ -123,6 +104,10 @@ int main(void)
     if (!glfwInit())
         return -1;
 
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
     if (!window)
@@ -155,11 +140,15 @@ int main(void)
         2, 3, 0  //triangle 2
     };
 
+    unsigned int vao;
+    GLCall(glGenVertexArrays(1, &vao));
+    GLCall(glBindVertexArray(vao));
+
     // vertex buffer
     unsigned int buffer;
     GLCall(glGenBuffers(1, &buffer)); //end argument saves id of buffer
     GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer)); //select buffer for work, since it is a vertex buffer its just an array
-    GLCall(glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), positions, GL_STATIC_DRAW)); // STATIC since the data will be modified once and used every frame, 6*2 floats (6 vertices with x and y each)
+    GLCall(glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(float), positions, GL_STATIC_DRAW)); // STATIC since the data will be modified once and used every frame, 6*2 floats (6 vertices with x and y each)
 
     //enable first vertex attrib array
     GLCall(glEnableVertexAttribArray(0));
@@ -184,6 +173,12 @@ int main(void)
     GLCall(int location = glGetUniformLocation(shader, "u_Color")); //get uniform location
     ASSERT(location != -1);
 
+    //Unbind everything
+    GLCall(glBindVertexArray(0));
+    GLCall(glUseProgram(0));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
     float r = 0.0f;
     float increment = 0.05f;
 
@@ -192,7 +187,11 @@ int main(void)
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
     { 
+        GLCall(glUseProgram(shader));
         GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));
+
+        GLCall(glBindVertexArray(vao));
+        GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
 
         /* Render here */
         GLCall(glClear(GL_COLOR_BUFFER_BIT));
