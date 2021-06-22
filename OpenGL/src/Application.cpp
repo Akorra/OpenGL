@@ -12,6 +12,7 @@
 #include "IndexBuffer.h"
 #include "VertexArray.h"
 #include "Shader.h"
+#include "Texture.h"
 
 int main(void)
 {
@@ -47,10 +48,10 @@ int main(void)
     { //Scope to force delete of stack allocated buffers
     //Triangle x1, y1, x2, y2, x3, y3
         float positions[] = {
-            -0.5f, -0.5f, //0
-             0.5f, -0.5f, //1
-             0.5f,  0.5f, //2
-            -0.5f,  0.5f  //3
+            -0.5f, -0.5f, 0.0f, 0.0f, //0
+             0.5f, -0.5f, 1.0f, 0.0f, //1
+             0.5f,  0.5f, 1.0f, 1.0f, //2
+            -0.5f,  0.5f, 0.0f, 1.0f  //3
         };
 
         unsigned int indices[] = {
@@ -58,9 +59,13 @@ int main(void)
             2, 3, 0  //triangle 2
         };
 
-        VertexBuffer vb(positions, 4 * 2 * sizeof(float));
+        GLCall(glEnable(GL_BLEND));
+        GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+        VertexBuffer vb(positions, 4 * 4 * sizeof(float)); // 4 points of 4 coords (2 position + 2 texture uv)
 
         VertexBufferLayout layout;
+        layout.Push<float>(2);
         layout.Push<float>(2);
         
         VertexArray va;
@@ -71,6 +76,12 @@ int main(void)
         Shader shader("res/shaders/Basic.shader");
         shader.Bind();
         shader.SetUniform4f("u_Color", 0.8f, 0.3f, 0.8f, 1.0f);
+
+        Texture texture("res/textures/dickbutt.png");
+        texture.Bind();
+
+        //Tell our shader wich texture slot to sample from (same slot as passed to texture Bind)
+        shader.SetUniform1i("u_Texture", 0);
 
         //Unbind everything
         va.Unbind();
