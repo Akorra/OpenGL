@@ -17,6 +17,12 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
+#define IMGUI_IMPL_OPENGL_LOADER_GLEW
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 int main(void)
 {
     GLFWwindow* window;
@@ -25,9 +31,11 @@ int main(void)
     if (!glfwInit())
         return -1;
 
+    const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(640, 480, "OpenGl", NULL, NULL);
@@ -78,14 +86,10 @@ int main(void)
 
         glm::mat4 proj  = glm::ortho(0.0f, 960.0f, 0.5f, 540.0f, -1.0f, 1.0f); 
         glm::mat4 view  = glm::translate(glm::mat4(1.0f), glm::vec3(-100, 0, 0));
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(200, 200, 0));
-
-        glm::mat4 mvp = proj * view * model; // opengl matrix multiplication is right to left
 
         Shader shader("res/shaders/Basic.shader");
         shader.Bind();
         shader.SetUniform4f("u_Color", 0.8f, 0.3f, 0.8f, 1.0f);
-        shader.SetUniformMat4f("u_MVP", mvp);
 
         Texture texture("res/textures/dickbutt.png");
         texture.Bind();
@@ -102,16 +106,46 @@ int main(void)
         Renderer renderer;
         renderer.SetClearColor(0.13f, 0.13f, 0.13f, 1.0f);
 
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+        //ImGui::StyleColorsClassic();
+
+        // Setup Platform/Renderer backends
+        ImGui_ImplGlfw_InitForOpenGL(window, true);
+        ImGui_ImplOpenGL3_Init(glsl_version);
+
+        // Our ImGui state
+        bool show_demo_window = true;
+        bool show_another_window = false;
+        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
         float r = 0.0f;
         float increment = 0.05f;
+
+        glm::vec3 translation(200, 200, 0);
 
         /* Loop until the user closes the window */
         while (!glfwWindowShouldClose(window))
         {
             renderer.Clear();
 
+            // Start the Dear ImGui frame
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            glm::mat4 model = glm::translate(glm::mat4(1.0f), translation);
+
+            glm::mat4 mvp = proj * view * model; // opengl matrix multiplication is right to left
+
             shader.Bind();
             shader.SetUniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
+            shader.SetUniformMat4f("u_MVP", mvp);
 
             renderer.Draw(va, ib, shader);
 
@@ -122,6 +156,24 @@ int main(void)
 
             r += increment;
 
+            // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+            {
+                ImGui::Begin("Move Object");                          // Create a window called "Hello, world!" and append into it.
+
+                ImGui::Text("Set Object world position.");               // Display some text (you can use a format strings too)
+
+                ImGui::SliderFloat("X", &translation.x, 0.0f, 960.0f);
+                ImGui::SliderFloat("Y", &translation.y, 0.5f, 540.0f);
+                ImGui::SliderFloat("Z", &translation.z, -1.0f, 1.0f);
+                //ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a colo
+
+                ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+                ImGui::End();
+            }
+
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
             /* Swap front and back buffers */
             glfwSwapBuffers(window);
 
@@ -129,6 +181,11 @@ int main(void)
             glfwPollEvents();
         }
     }
+
+    // Cleanup
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     glfwTerminate();
     return 0;
